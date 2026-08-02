@@ -1,0 +1,51 @@
+%% Game Glitch Investigator — System Architecture
+%% Source of truth for the architecture diagram. Preview/edit at https://mermaid.live
+%% then export a PNG into ../assets/ for embedding in the README.
+
+flowchart TD
+    User([Player in Browser]):::actor
+
+    subgraph Presentation["Presentation Layer — Streamlit UI (app.py)"]
+        UI["Widgets<br/>difficulty · guess input · Submit · New Game · hint toggle"]:::ui
+        Debug["Developer Debug Info<br/>expander (secret, attempts, score, history)"]:::ui
+    end
+
+    subgraph State["Session State — st.session_state"]
+        SS["secret · attempts · score<br/>status · history"]:::state
+    end
+
+    subgraph Logic["Business Logic — logic_utils.py"]
+        Check["check_guess(guess, secret)<br/>→ (outcome, message)"]:::logic
+        NewGame["new_game_state(secret)<br/>→ fresh game dict"]:::logic
+    end
+
+    subgraph AppHelpers["Controller Helpers — app.py"]
+        Range["get_range_for_difficulty()"]:::helper
+        Parse["parse_guess()"]:::helper
+        Score["update_score()"]:::helper
+    end
+
+    subgraph Tests["Verification — tests/"]
+        Pytest["pytest · test_game_logic.py<br/>(8 tests)"]:::test
+    end
+
+    User -->|guess / clicks| UI
+    UI -->|read / write| SS
+    UI --> Range
+    UI --> Parse
+    UI -->|on Submit| Check
+    UI -->|on New Game| NewGame
+    Check --> Score
+    Score -->|updates| SS
+    NewGame -->|resets| SS
+    SS -->|render feedback| UI
+    SS -.-> Debug
+    Debug -.-> User
+    Pytest -.->|validates| Logic
+
+    classDef actor fill:#1f2937,stroke:#111827,color:#f9fafb;
+    classDef ui fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef state fill:#fef3c7,stroke:#d97706,color:#92400e;
+    classDef logic fill:#dcfce7,stroke:#16a34a,color:#14532d;
+    classDef helper fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+    classDef test fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
