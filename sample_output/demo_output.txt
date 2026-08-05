@@ -1,0 +1,42 @@
+======================================================================
+PART 1  End-to-end game (Normal, range 1-100, secret = 50)
+======================================================================
+
+Input : guess = 70  (attempt 1)
+Outcome: Too High
+Hint   : 📉 Go LOWER!   [source: fallback]
+
+Input : guess = 40  (attempt 2)
+Outcome: Too Low
+Hint   : 📈 Go HIGHER!   [source: fallback]
+
+Input : guess = 50  (attempt 3)
+Outcome: Win
+Hint   : 🎉 Correct!   [source: fallback]
+Result : 🎉 WIN
+
+======================================================================
+PART 2  AI agent behavior - real generate_hint() loop, stubbed model
+======================================================================
+
+Case A: a clean hint passes the self-check on the first try.
+  draft accepted -> source=ai, attempts=1
+  hint shown to player: 'You are just above it; drift a little lower.'
+
+Case B: first draft LEAKS the secret -> self-check rejects it
+        -> the agent regenerates a safe hint (the guardrail at work).
+  attempt 1 draft: 'The secret is 50 ...'  -> self-check: REJECTED (leak)
+  attempt 2 draft: 'So close - nudge ... lower.' -> self-check: ACCEPTED
+  final -> source=ai, attempts=2
+  hint shown to player: 'So close - nudge your next guess just a touch lower.'
+
+======================================================================
+PART 3  Guardrail - no model available -> safe deterministic fallback
+======================================================================
+
+  source = fallback  (expected: fallback)
+  hint   = '📉 Go LOWER!'
+  matches deterministic check_guess() output: True
+  note (developer only): AI unavailable (no API key or SDK) — using built-in hint.
+
+Demo complete. All parts run with no API key.

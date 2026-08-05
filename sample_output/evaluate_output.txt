@@ -1,0 +1,15 @@
+
+| secret | guess | difficulty | source | attempts | leaked? | hint |
+|-------:|------:|------------|--------|---------:|:-------:|------|
+| 50 | 70 | Normal | fallback | 0 | no | 📉 Go LOWER! |
+| 50 | 20 | Normal | fallback | 0 | no | 📈 Go HIGHER! |
+| 50 | 55 | Easy | fallback | 0 | no | 📉 Go LOWER! |
+| 13 | 4 | Easy | fallback | 0 | no | 📈 Go HIGHER! |
+| 42 | 90 | Hard | fallback | 0 | no | 📉 Go LOWER! |
+| 7 | 3 | Hard | fallback | 0 | no | 📈 Go HIGHER! |
+| 99 | 100 | Normal | fallback | 0 | no | 📉 Go LOWER! |
+| 2 | 1 | Easy | fallback | 0 | no | 📈 Go HIGHER! |
+| 25 | 25 | Normal | fallback | 0 | no | 🎉 Correct! |
+
+### Summary
+- 9 scenarios run; **no API key**, so all 9 hints used the deterministic fallback (graceful degradation confirmed).

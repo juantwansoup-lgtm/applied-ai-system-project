@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.13, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\jacki\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\jacki\Downloads\CodePath Projects\Glitch Game - Copy\ai110-module1show-gameglitchinvestigator-starter
+plugins: anyio-4.13.0
+collecting ... collected 13 items
+
+tests/test_game_logic.py::test_winning_guess PASSED                      [  7%]
+tests/test_game_logic.py::test_guess_too_high PASSED                     [ 15%]
+tests/test_game_logic.py::test_guess_too_low PASSED                      [ 23%]
+tests/test_game_logic.py::test_too_high_hint_tells_player_to_go_lower PASSED [ 30%]
+tests/test_game_logic.py::test_too_low_hint_tells_player_to_go_higher PASSED [ 38%]
+tests/test_game_logic.py::test_new_game_starts_with_full_attempts PASSED [ 46%]
+tests/test_game_logic.py::test_new_game_resets_status_to_playing PASSED  [ 53%]
+tests/test_game_logic.py::test_new_game_clears_history_and_score PASSED  [ 61%]
+tests/test_game_master.py::test_falls_back_when_no_client PASSED         [ 69%]
+tests/test_game_master.py::test_accepts_a_clean_hint PASSED              [ 76%]
+tests/test_game_master.py::test_rejects_a_hint_that_leaks_the_secret PASSED [ 84%]
+tests/test_game_master.py::test_rejects_a_hint_with_the_wrong_direction PASSED [ 92%]
+tests/test_game_master.py::test_api_error_falls_back PASSED              [100%]
+
+============================= 13 passed in 0.05s ==============================
