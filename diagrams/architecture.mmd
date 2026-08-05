@@ -1,6 +1,11 @@
 %% Game Glitch Investigator — System Architecture
 %% Source of truth for the architecture diagram. Preview/edit at https://mermaid.live
 %% then export a PNG into ../assets/ for embedding in the README.
+%%
+%% Data flow:  Player guess (input) -> game logic -> Agentic Game Master
+%%             (write -> self-check -> fix) -> verified hint (output) -> Player.
+%% Humans & tests check the AI: the self-check agent + pytest gate every hint,
+%% and the player reads the final AI hint in the browser.
 
 flowchart TD
     User([Player in Browser]):::actor
@@ -14,21 +19,33 @@ flowchart TD
         SS["secret · attempts · score<br/>status · history"]:::state
     end
 
-    subgraph Logic["Business Logic — logic_utils.py"]
-        Check["check_guess(guess, secret)<br/>→ (outcome, message)"]:::logic
-        NewGame["new_game_state(secret)<br/>→ fresh game dict"]:::logic
-    end
-
     subgraph AppHelpers["Controller Helpers — app.py"]
         Range["get_range_for_difficulty()"]:::helper
         Parse["parse_guess()"]:::helper
         Score["update_score()"]:::helper
     end
 
-    subgraph Tests["Verification — tests/"]
-        Pytest["pytest · test_game_logic.py<br/>(8 tests)"]:::test
+    subgraph Logic["Business Logic — logic_utils.py"]
+        Check["check_guess(guess, secret)<br/>→ (outcome, message)"]:::logic
+        NewGame["new_game_state(secret)<br/>→ fresh game dict"]:::logic
     end
 
+    subgraph GM["AI Game Master — game_master.py (Agentic Loop)"]
+        Gen["1 · Act — _plan_and_write()<br/>Claude writes a difficulty-styled hint"]:::ai
+        SelfCheck["2 · Check — _self_check()<br/>Evaluator: leaks secret? wrong direction?"]:::eval
+        Decide{"ok?"}:::eval
+        Fallback["Fix / Fallback<br/>retry ≤2, else deterministic hint"]:::ai
+        Logs[("logs/game_master.log<br/>calls + verdicts")]:::log
+    end
+
+    Claude{{"Claude API<br/>claude-opus-5"}}:::ext
+
+    subgraph Tests["Verification — tests/"]
+        PytestLogic["test_game_logic.py<br/>(8 logic tests)"]:::test
+        PytestGM["test_game_master.py<br/>(5 AI-reliability tests:<br/>self-check + fallback)"]:::test
+    end
+
+    %% --- Input -> process ---
     User -->|guess / clicks| UI
     UI -->|read / write| SS
     UI --> Range
@@ -38,10 +55,31 @@ flowchart TD
     Check --> Score
     Score -->|updates| SS
     NewGame -->|resets| SS
+
+    %% --- Agentic hint pipeline ---
+    UI -->|"generate_hint(guess, secret, difficulty, history)"| Gen
+    Gen -->|prompt| Claude
+    Claude -->|draft hint| SelfCheck
+    SelfCheck -->|"grade vs check_guess"| Claude
+    Check -.->|ground-truth outcome| SelfCheck
+    SelfCheck --> Decide
+    Decide -->|no| Fallback
+    Fallback -.->|retry| Gen
+    Decide -->|yes| VerifiedHint["Verified AI hint"]:::ai
+    Fallback -->|safe hint| VerifiedHint
+    Gen -.-> Logs
+    SelfCheck -.-> Logs
+
+    %% --- Output -> human ---
+    VerifiedHint -->|render| UI
     SS -->|render feedback| UI
     SS -.-> Debug
     Debug -.-> User
-    Pytest -.->|validates| Logic
+    UI -->|AI hint + feedback| User
+
+    %% --- Testing checks the AI + logic ---
+    PytestLogic -.->|validates| Logic
+    PytestGM -.->|validates loop + guardrails| GM
 
     classDef actor fill:#1f2937,stroke:#111827,color:#f9fafb;
     classDef ui fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
@@ -49,3 +87,7 @@ flowchart TD
     classDef logic fill:#dcfce7,stroke:#16a34a,color:#14532d;
     classDef helper fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
     classDef test fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
+    classDef ai fill:#e0f2fe,stroke:#0284c7,color:#075985;
+    classDef eval fill:#fae8ff,stroke:#c026d3,color:#701a75;
+    classDef ext fill:#f1f5f9,stroke:#475569,color:#0f172a;
+    classDef log fill:#f5f5f4,stroke:#78716c,color:#292524;
