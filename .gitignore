@@ -17,6 +17,8 @@ pip-wheel-metadata/
 .env
 .env.*
 *.env
+# ...but DO commit the safe template so others know which vars to set
+!.env.example
 
 # Streamlit
 .streamlit/secrets.toml
@@ -29,8 +31,9 @@ htmlcov/
 nosetests.xml
 coverage.xml
 
-# Logs
+# Logs and generated evaluation artifacts
 *.log
+logs/evaluation.json
 
 # OS generated files
 .DS_Store

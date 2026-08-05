@@ -1,15 +1,24 @@
 import random
 import streamlit as st
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # pull ANTHROPIC_API_KEY from a local .env if present
+except ImportError:
+    pass
+
 from logic_utils import check_guess, new_game_state
+from game_master import generate_hint
 
 def get_range_for_difficulty(difficulty: str):
+    # Range grows with difficulty so higher levels are genuinely harder
+    # (a bigger search space) and pair with fewer attempts below.
     if difficulty == "Easy":
         return 1, 20
     if difficulty == "Normal":
         return 1, 100
     if difficulty == "Hard":
-        return 1, 50
+        return 1, 200
     return 1, 100
 
 
@@ -62,9 +71,9 @@ difficulty = st.sidebar.selectbox(
 )
 
 attempt_limit_map = {
-    "Easy": 6,
-    "Normal": 8,
-    "Hard": 5,
+    "Easy": 8,   # small range (1-20), generous attempts
+    "Normal": 7, # medium range (1-100)
+    "Hard": 6,   # large range (1-200), fewest attempts
 }
 attempt_limit = attempt_limit_map[difficulty]
 
@@ -91,7 +100,7 @@ if "history" not in st.session_state:
 st.subheader("Make a guess")
 
 st.info(
-    f"Guess a number between 1 and 100. "
+    f"Guess a number between {low} and {high}. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
 
@@ -101,6 +110,12 @@ with st.expander("Developer Debug Info"):
     st.write("Score:", st.session_state.score)
     st.write("Difficulty:", difficulty)
     st.write("History:", st.session_state.history)
+    # AI Game Master status for the last hint (players don't see this).
+    st.write("Last hint source:", st.session_state.get("last_hint_source", "—"))
+    st.write("Last hint attempts:", st.session_state.get("last_hint_attempts", "—"))
+    note = st.session_state.get("last_hint_note", "")
+    if note:
+        st.write("Last hint note:", note)
 
 raw_guess = st.text_input(
     "Enter your guess:",
@@ -143,7 +158,29 @@ if submit:
         outcome, message = check_guess(guess_int, secret)
 
         if show_hint:
-            st.warning(message)
+            if outcome == "Win":
+                st.warning(message)
+            else:
+                with st.spinner("The Game Master is thinking..."):
+                    hint = generate_hint(
+                        guess=guess_int,
+                        secret=secret,
+                        low=low,
+                        high=high,
+                        difficulty=difficulty,
+                        history=st.session_state.history,
+                    )
+                # Record the AI status for the debug panel, then show a clean
+                # hint to the player. Players never see the fallback note; it
+                # lives in Developer Debug Info instead.
+                st.session_state.last_hint_source = hint.source
+                st.session_state.last_hint_attempts = hint.attempts
+                st.session_state.last_hint_note = hint.note
+                if hint.source == "ai":
+                    st.warning(f"🔮 Game Master (AI): {hint.text}")
+                    st.caption(f"AI hint verified in {hint.attempts} attempt(s).")
+                else:
+                    st.warning(hint.text)
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
